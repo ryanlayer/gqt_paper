@@ -1,4 +1,4 @@
-wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/*vcf.gz
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/vcf_with_sample_level_annotation/*vcf.gz
 
 for F in `ls *.vcf.gz`
 do
