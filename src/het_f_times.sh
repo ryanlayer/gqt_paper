@@ -5,6 +5,7 @@
 #  Author :
 ############################################################
 
+GQT=gqt
 
 ## BEGIN SCRIPT
 usage()
@@ -77,13 +78,6 @@ then
     exit 1
 fi
 
-
-
-if [ ! -f $BCF\.ped.db ]; then
-    ~/src/gqt/scripts/simple_ped.sh -f $BCF > $BCF\.ped
-    gqt convert ped -i $BCF\.ped
-fi
-
 POP=`calc $SIZE/10 | cut -d "." -f1`
 AF=`calc $POP/100 | cut -d "." -f1`
 
@@ -94,29 +88,25 @@ fi
 
 if [ "$OP" == "gqtc" ]
 then
-    # GQT
-    LAST_NAME=`tail -n $POP $BCF\.ped | head -n 1 | awk '{print $1;}'`
-    LAST_ID=`sqlite3 $BCF.ped.db "select Ind_ID from ped where Sample_Name='$LAST_NAME'"`
+    LAST_ID=`sqlite3 $BCF.db "SELECT BCF_ID from ped ORDER BY BCF_ID;" | tail -n $POP | head -n 1;`
 
-    CMD="gqt query -i $BCF\.gqt \
+    CMD="$GQT query -i $BCF\.gqt \
          -c \
-         -d $BCF\.ped.db \
-         -p \"Ind_ID >= $LAST_ID\" \
-         -g \"count(HET HOMO_ALT)<=$AF\" "
- 
-    #echo $CMD
+         -d $BCF\.db \
+         -p \"BCF_ID >= $LAST_ID\" \
+         -g \"count(HET HOM_ALT)<=$AF\" "
 
+    #echo $CMD
+ 
     T="$( sh -c "TIMEFORMAT='%3R'; time $CMD > o" 2>&1)"
     echo -e "$SIZE\tgqtc\t$T"
 elif [ "$OP" == "gqt" ]
 then
-    LAST_NAME=`tail -n $POP $BCF\.ped | head -n 1 | awk '{print $1;}'`
-    LAST_ID=`sqlite3 $BCF.ped.db "select Ind_ID from ped where Sample_Name='$LAST_NAME'"`
+    LAST_ID=`sqlite3 $BCF.db "SELECT BCF_ID from ped ORDER BY BCF_ID;" | tail -n $POP | head -n 1;`
 
-    CMD="gqt query -i $BCF\.gqt \
-         -d $BCF\.ped.db \
-         -p \"Ind_ID >= $LAST_ID\" \
-         -g \"count(HET HOMO_ALT)<=$AF\" "
+    CMD="$GQT query -i $BCF\.gqt \
+         -p \"BCF_ID >= $LAST_ID\" \
+         -g \"count(HET HOM_ALT)<=$AF\" "
 
     #echo $CMD
     
@@ -125,7 +115,11 @@ then
 elif [ "$OP" == "bcf" ]
 then
     # BCFTOOLS
-    tail -n $POP $BCF\.ped | awk '{print $1}' > .bcftools.keep
+    sqlite3 $BCF.db "SELECT BCF_ID,BCF_Sample from ped ORDER BY BCF_ID;" \
+    | tail -n $POP \
+    | cut -d "|" -f2 \
+    > .bcftools.keep
+
     CMD="bcftools view -C $AF -S .bcftools.keep $BCF"
 
     #echo $CMD

@@ -5,6 +5,7 @@
 #  Author :
 ############################################################
 
+GQT=gqt
 
 ## BEGIN SCRIPT
 usage()
@@ -78,24 +79,17 @@ then
 fi
 
 
-if [ ! -f $BCF\.ped.db ]; then
-    ~/src/gqt/scripts/simple_ped.sh -f $BCF > $BCF.ped
-    gqt convert ped -i $BCF.ped
-fi
-
 POP=`calc $SIZE/10 | cut -d "." -f1`
 
 if [ "$OP" == "gqtc" ]
 then
     # GQT
-    LAST_NAME=`tail -n $POP $BCF\.ped | head -n 1 | awk '{print $1;}'`
-    LAST_ID=`sqlite3 $BCF.ped.db "select Ind_ID from ped where Sample_Name='$LAST_NAME'"`
+    LAST_ID=`sqlite3 $BCF.db "SELECT BCF_ID from ped ORDER BY BCF_ID;" | tail -n $POP | head -n 1;`
 
-    CMD="gqt query -i $BCF\.gqt \
+    CMD="$GQT query -i $BCF\.gqt \
          -c \
-         -d $BCF\.ped.db \
-         -p \"Ind_ID >= $LAST_ID\" \
-         -g \"count(HET HOMO_ALT)\" "
+         -p \"BCF_ID >= $LAST_ID\" \
+         -g \"count(HET HOM_ALT)\" "
 
     #echo $CMD
 
@@ -103,13 +97,11 @@ then
     echo -e "$SIZE\tgqtc\t$T"
 elif [ "$OP" == "gqt" ]
 then
-    LAST_NAME=`tail -n $POP $BCF\.ped | head -n 1 | awk '{print $1;}'`
-    LAST_ID=`sqlite3 $BCF.ped.db "select Ind_ID from ped where Sample_Name='$LAST_NAME'"`
+    LAST_ID=`sqlite3 $BCF.db "SELECT BCF_ID from ped ORDER BY BCF_ID;" | tail -n $POP | head -n 1;`
 
-    CMD="gqt query -i $BCF\.gqt \
-         -d $BCF\.ped.db \
-         -p \"Ind_ID >= $LAST_ID\" \
-         -g \"count(HET HOMO_ALT)\" "
+    CMD="$GQT query -i $BCF\.gqt \
+         -p \"BCF_ID >= $LAST_ID\" \
+         -g \"count(HET HOM_ALT)\" "
 
     #echo $CMD
     
@@ -117,15 +109,19 @@ then
     echo -e "$SIZE\tgqt\t$T"
 elif [ "$OP" == "bcf" ]
 then
-    tail -n $POP $BCF\.ped | awk '{print $1}' > .bcftools.keep
-    CMD="bcftools view -C $AF -S .bcftools.keep $BCF"
+    sqlite3 $BCF.db "SELECT BCF_ID, BCF_Sample from ped ORDER BY BCF_ID;" \
+    | tail -n $POP \
+    | cut -d "|" -f2 \
+    > .bcftools.keep
 
     # BCFTOOLS
     CMD="bcftools stats -S .bcftools.keep $BCF"
 
+    #echo $CMD
+
     T="$( sh -c "TIMEFORMAT='%3R'; time $CMD > o" 2>&1)"
     echo -e "$SIZE\tbcf\t$T"
-    rm .bcftools.keep
+    #rm .bcftools.keep
 elif [ "$OP" == "plink" ]
 then
     # PLINK
