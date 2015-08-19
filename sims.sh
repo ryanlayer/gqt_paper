@@ -15,60 +15,29 @@ do
     | bcftools view -Ob > $POP.$SIZE.var.bcf
 done
 
-bcftools stats 100.1e8.var.bcf | grep SN
-# # SN, Summary numbers:
-# # SN   [2]id   [3]key  [4]value
-# SN 0   number of samples:  100
-# SN 0   number of records:  588830
+bcftools index 100.1e8.var.bcf
+gqt convert bcf -i 100.1e8.var.bcf
+gqt convert ped -i 100.1e8.var.bcf
 
-bcftools stats 500.1e8.var.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN  0   number of samples:  500
-#SN  0   number of records:  752295
+bcftools index 500.1e8.var.bcf
+gqt convert bcf -i 500.1e8.var.bcf
+gqt convert ped -i 500.1e8.var.bcf
 
-bcftools stats 1000.1e8.var.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN  0   number of samples:  1000
-#SN  0   number of records:  816284
+bcftools index 1000.1e8.var.bcf
+gqt convert bcf -i 1000.1e8.var.bcf
+gqt convert ped -i 1000.1e8.var.bcf
 
-bcftools stats 5000.1e8.var.bcf | grep SN
-## SN, Summary numbers:
-## SN   [2]id   [3]key  [4]value
-#SN 0   number of samples:  5000
-#SN 0   number of records:  977108
+bcftools index 5000.1e8.var.bcf
+gqt convert bcf -i 5000.1e8.var.bcf
+gqt convert ped -i 5000.1e8.var.bcf
 
-bcftools stats 10000.1e8.var.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN  0   number of samples:  10000
-#SN  0   number of records:  1047031
+bcftools index 10000.1e8.var.bcf
+gqt convert bcf -i 10000.1e8.var.bcf
+gqt convert ped -i 10000.1e8.var.bcf
 
-bcftools stats 100000.1e8.var.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN  0   number of samples:  100000
-#SN  0   number of records:  2052387
-
-gqt convert bcf -i 100.1e8.var.bcf -r 588830 -f 100
-
-gqt convert bcf -i 500.1e8.var.bcf -r 752295 -f 500
-
-gqt convert bcf -i 1000.1e8.var.bcf -r 816284 -f 1000
-
-gqt convert bcf -i 5000.1e8.var.bcf -r 977108 -f 5000
-
-gqt convert bcf -i 10000.1e8.var.bcf -r 1047031 -f 10000
-
-gqt convert bcf -i 100000.1e8.var.bcf -r 2052387 -f 100000
-
-for BCF in `ls *bcf`
-do
-    $HOME/src/gqt/scripts/simple_ped.sh -f $BCF > $BCF.ped
-    echo $BCF
-    time gqt convert ped -i $BCF.ped
-done
+bcftools index 100000.1e8.var.bcf
+gqt convert bcf -i 100000.1e8.var.bcf
+gqt convert ped -i 100000.1e8.var.bcf
 
 plink \
     --make-bed \

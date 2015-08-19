@@ -1,20 +1,15 @@
 wget ftp://ftp.hgsc.bcm.edu/DGRP/freeze2_Feb_2013/vcf_files/freeze2.vcf.gz
 
-bcftools view -Ob freeze2.vcf.gz > freeze2.bcf
-
-src/simple_ped.sh \
-    -f freeze2.bcf \
-    > freeze2.bcf.ped
-
-gqt convert ped -i freeze2.bcf.ped
-
-bcftools stats freeze2.bcf  | grep SN | head -4
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN  0   number of samples:  205
-#SN  0   number of records:  6146611
-
-gqt convert bcf -i freeze2.bcf -r 6146611 -f 205
+LC_ALL=C
+bcftools view freeze2.vcf.gz \
+    | awk '$0~"^#" { print $0; next } { print $0 | "sort -k1,1V -k2,2n" }' \
+    | bcftools view -Oz \
+    > freeze2.sort.vcf.gz
+bcftools index freeze2.sort.vcf.gz
+bcftools view -Ob freeze2.sort.vcf.gz > freeze2.bcf
+bcftools index freeze2.bcf
+gqt convert bcf -i freeze4.bcf
+gqt convert ped -i freeze2.bcf
 
 plink \
     --make-bed \

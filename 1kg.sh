@@ -1,4 +1,5 @@
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/*vcf.gz
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/vcf_with_sample_level_annotation/*vcf.gz
 
 for F in `ls *.vcf.gz`
 do
@@ -33,36 +34,16 @@ bcftools concat -Ob \
     ALL.chr9.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf \
     ALL.chrX.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf
 
-bcftools stats \
-    ALL.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf \
-    | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN      0       number of samples:      2504
-#SN      0       number of records:      84739846
-
-gqt convert bcf \
-    -i ALL.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf \
-    -r 84739846 \
-    -f 2504
-
-plink \
-    --make-bed \
-    --bcf ALL.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf \
-    --out ALL.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf.plink \
-    --allow-extra-chr
-
 OVCF=ALL.phase3_shapeit2_mvncall_integrated_v5_extra_anno.20130502.genotypes.bcf
 export BCFTOOLS_PLUGINS="$HOME/src/bcftools/plugins/"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/src/htslib"
 
-src/simple_ped.sh \
-    -f $OVCF \
-    > ALL.chr20.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.bcf.ped
-
 #100
-S=`tail -n+2 ALL.chr20.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.bcf.ped \
-    | reservoir_sampling 100 \
+S=`bcftools view $OVCF\
+    | grep -m 1 "#CHROM" \
+    | cut -f10- \
+    | tr '\t' '\n' \
+    | ~/bin/reservoir_sampling 100 \
     | tr '\n' ',' \
     | sed -e "s/,$//"`
 
@@ -70,10 +51,14 @@ bcftools view -s $S $OVCF \
     | bcftools plugin fill-AN-AC \
     | bcftools view -Ob -c 1 \
     > 100.bcf
+bcftools index 100.bcf
 
 #500
-S=`tail -n+2 ALL.chr20.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.bcf.ped \
-    | reservoir_sampling 500 \
+S=`bcftools view $OVCF\
+    | grep -m 1 "#CHROM" \
+    | cut -f10- \
+    | tr '\t' '\n' \
+    | ~/bin/reservoir_sampling 500 \
     | tr '\n' ',' \
     | sed -e "s/,$//"`
 
@@ -81,10 +66,14 @@ bcftools view -s $S $OVCF \
     | bcftools plugin fill-AN-AC \
     | bcftools view -Ob -c 1 \
     > 500.bcf
+bcftools index 500.bcf
 
 #1000
-S=`tail -n+2 ALL.chr20.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.bcf.ped \
-    | reservoir_sampling 1000 \
+S=`bcftools view $OVCF\
+    | grep -m 1 "#CHROM" \
+    | cut -f10- \
+    | tr '\t' '\n' \
+    | ~/bin/reservoir_sampling 1000 \
     | tr '\n' ',' \
     | sed -e "s/,$//"`
 
@@ -92,30 +81,22 @@ bcftools view -s $S $OVCF \
     | bcftools plugin fill-AN-AC \
     | bcftools view -Ob -c 1 \
     > 1000.bcf
+bcftools index 1000.bcf
 
-bcftools stats 100.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN      0       number of samples:      100
-#SN      0       number of records:      24737719
+ln -s $OVCF 2504.bcf
+bcftools index 2504.bcf
 
-gqt convert bcf -i 100.bcf -r 24737719 -f 100
+gqt convert bcf -i 100.bcf
+gqt convert ped -i 100.bcf
 
-bcftools stats 500.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN      0       number of samples:      500
-#SN      0       number of records:      44085520
+gqt convert bcf -i 500.bcf
+gqt convert ped -i 500.bcf
 
-gqt convert bcf -i 500.bcf -r 44085520 -f 500
+gqt convert bcf -i 1000.bcf
+gqt convert ped -i 1000.bcf
 
-bcftools stats 1000.bcf | grep SN
-## SN, Summary numbers:
-## SN    [2]id   [3]key  [4]value
-#SN      0       number of samples:      1000
-#SN      0       number of records:      58154700
-
-gqt convert bcf -i 1000.bcf -r 58154700 -f 1000
+gqt convert bcf -i 2504.bcf
+gqt convert ped -i 2504.bcf
 
 plink \
     --make-bed \
@@ -133,6 +114,12 @@ plink \
     --make-bed \
     --bcf 1000.bcf \
     --out 1000.bcf.plink \
+    --allow-extra-chr
+
+plink \
+    --make-bed \
+    --bcf 2504.bcf \
+    --out 2504.bcf.plink \
     --allow-extra-chr
 
 INDS="100
